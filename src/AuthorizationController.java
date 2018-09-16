@@ -47,15 +47,6 @@ public class AuthorizationController {
         Main.application.writer.write("/login" + loginText.getText() + " " + passwordText.getText() + "\n");
         Main.application.writer.flush();
         String response = Main.application.reader.readLine();
-//        switch(response) {
-//            case "/success":
-//                Main.application.launchCalendar();
-//                break;
-//            case "/unsuccess":
-//                info.setTextFill(Color.rgb(40, 255, 40));
-//                info.setText("Enter correct login or password!");
-//                break;
-//        }
         if(response.startsWith("/success")) {
             int id = Integer.parseInt(response.replace("/success", ""));
             Main.application.launchCalendar(id);

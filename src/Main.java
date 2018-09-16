@@ -1,11 +1,10 @@
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 import java.io.BufferedReader;
@@ -20,6 +19,8 @@ public class Main extends Application {
     public static Main application;
     public Stage stage;
     public int id = -1;
+    public static double CELL_X_SIZE;
+    public static double CELL_Y_SIZE;
 
     private Socket socket;
     public BufferedReader reader;
@@ -32,16 +33,6 @@ public class Main extends Application {
     public AnchorPane calendarPane;
 
     public static void main(String[] args) {
-//        new Thread(() -> {
-//            try {
-//                while(true) {
-//                    Thread.sleep(5000);
-//                    System.out.println(Runtime.getRuntime().freeMemory());
-//                }
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }).start();
         launch(args);
     }
 
@@ -63,16 +54,19 @@ public class Main extends Application {
         authorization = new Scene(authorizationPane);
 
         calendarPane = FXMLLoader.load(getClass().getResource("Calendar.fxml"));
-        for (double d = calendarPane.getPrefWidth()/7; d < calendarPane.getPrefWidth(); d += calendarPane.getPrefWidth()/7) {
+        CELL_X_SIZE = calendarPane.getPrefWidth() / 7;
+        CELL_Y_SIZE = (calendarPane.getPrefHeight() - 55) / 8;
+
+        for (double d = calendarPane.getPrefWidth()/7; d < calendarPane.getPrefWidth(); d += CELL_X_SIZE) {
             Line line = new Line(d, 55, d, calendarPane.getPrefHeight());
             calendarPane.getChildren().add(line);
         }
 
         int hour = 0;
-        Line separator = new Line(20, 55, 20, calendarPane.getPrefHeight()); //separator between hours and table
+        Line separator = new Line(20, 55, 20, calendarPane.getPrefHeight());
         calendarPane.getChildren().add(separator);
 
-        for(double d = 55; d < calendarPane.getPrefHeight(); d += (calendarPane.getPrefHeight() - 55) / 8) {
+        for(double d = 55; d < calendarPane.getPrefHeight(); d += CELL_Y_SIZE) {
             Line line = new Line(0, d, calendarPane.getPrefWidth(), d);
             Label label = new Label(String.valueOf(hour));
             hour += 3;
@@ -87,13 +81,46 @@ public class Main extends Application {
         stage.setTitle("Authorize");
         stage.show();
         id = -1;
-
     }
 
-    public void launchCalendar(int id) {
+    public void launchCalendar(int id) throws IOException {
+        writer.write("/getdates" + id + "\n");
+        writer.flush();
+        String response;
+        while(!(response = reader.readLine()).equals("/end")) {
+            if(response.startsWith("/date")) {
+                System.out.println("received");
+                drawPrevDates(response);
+            }
+        }
         stage.setScene(calendar);
         stage.setTitle("Calendar");
         stage.show();
         this.id = id;
+    }
+
+
+    private void drawPrevDates(String response) {
+        String[] args = response.replace("/date", "")
+                .replace("\n", "")
+                .split("~");
+        int day = Integer.parseInt(args[0]);
+        int minute_from = Integer.parseInt(args[1]);
+        int minute_to = Integer.parseInt(args[2]);
+        String info = args[3];
+
+        double startY = minute_from * CELL_Y_SIZE / 180 + 55;
+        double endY = minute_to * CELL_Y_SIZE / 180 + 55;
+        double startX = day * CELL_X_SIZE;
+        if(day == 0) {
+            startX += 20;
+        }
+
+        Rectangle rect = new Rectangle(startX, startY, CELL_X_SIZE, endY - startY);
+        Label text = new Label(info);
+        text.setLayoutX(startX);
+        text.setLayoutY(startY + startY / 2);
+
+        calendarPane.getChildren().addAll(rect, text);
     }
 }
