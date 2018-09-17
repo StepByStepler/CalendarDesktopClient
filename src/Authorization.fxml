@@ -15,7 +15,6 @@
       </font>
     </Label>
     <TextField fx:id="loginText" layoutX="58.0" layoutY="163.0" prefHeight="29.0" prefWidth="234.0" promptText="Логин" />
-    <TextField fx:id="passwordText" layoutX="58.0" layoutY="205.0" prefHeight="29.0" prefWidth="234.0" promptText="Пароль" />
     <Button fx:id="register" layoutX="29.0" layoutY="298.0" mnemonicParsing="false" onAction="#registerClicked" prefHeight="46.0" prefWidth="121.0" text="Зарегестрироваться">
       <font>
         <Font size="11.0" />
@@ -23,5 +22,6 @@
     </Button>
     <Button fx:id="loginButton" layoutX="200.0" layoutY="298.0" mnemonicParsing="false" onAction="#loginClicked" prefHeight="46.0" prefWidth="121.0" text="Войти" />
     <Label fx:id="info" alignment="CENTER" layoutX="58.0" layoutY="250.0" prefHeight="40.0" prefWidth="234.0" text="" />
+    <PasswordField fx:id="passwordText" layoutX="58.0" layoutY="205.0" prefHeight="29.0" prefWidth="234.0" promptText="Пароль" />
   </children>
 </AnchorPane>

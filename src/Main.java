@@ -1,5 +1,6 @@
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
@@ -14,23 +15,29 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.ListIterator;
 
 public class Main extends Application {
     public static Main application;
-    public Stage stage;
-    public int id = -1;
-    public static double CELL_X_SIZE;
-    public static double CELL_Y_SIZE;
+    private Stage stage;
+    int id = -1;
+    private static double CELL_X_SIZE;
+    static double CELL_Y_SIZE;
 
     private Socket socket;
-    public BufferedReader reader;
-    public BufferedWriter writer;
+    BufferedReader reader;
+    BufferedWriter writer;
 
-    public Scene authorization;
-    public AnchorPane authorizationPane;
+    private Scene authorization;
+    private AnchorPane authorizationPane;
 
-    public Scene calendar;
-    public AnchorPane calendarPane;
+    private Scene calendar;
+    AnchorPane calendarPane;
+    Calendar time = Calendar.getInstance();
+    ArrayList<Node> dates = new ArrayList<>();
 
     public static void main(String[] args) {
         launch(args);
@@ -56,7 +63,28 @@ public class Main extends Application {
         calendarPane = FXMLLoader.load(getClass().getResource("Calendar.fxml"));
         CELL_X_SIZE = calendarPane.getPrefWidth() / 7;
         CELL_Y_SIZE = (calendarPane.getPrefHeight() - 55) / 8;
+        calendar = new Scene(calendarPane);
+    }
 
+    public void launchAuthorization() {
+        removeCalendar();
+        stage.setScene(authorization);
+        stage.setTitle("Authorize");
+        stage.show();
+        id = -1;
+    }
+
+    public void launchCalendar(int id) throws IOException {
+        time.setTime(new Date());
+        this.id = id;
+        fillLines();
+        fillCalendar();
+        stage.setScene(calendar);
+        stage.setTitle("Calendar");
+        stage.show();
+    }
+
+    private void fillLines() {
         for (double d = calendarPane.getPrefWidth()/7; d < calendarPane.getPrefWidth(); d += CELL_X_SIZE) {
             Line line = new Line(d, 55, d, calendarPane.getPrefHeight());
             calendarPane.getChildren().add(line);
@@ -73,54 +101,56 @@ public class Main extends Application {
             label.setLayoutY(d);
             calendarPane.getChildren().addAll(line, label);
         }
-        calendar = new Scene(calendarPane);
     }
 
-    public void launchAuthorization() {
-        stage.setScene(authorization);
-        stage.setTitle("Authorize");
-        stage.show();
-        id = -1;
-    }
-
-    public void launchCalendar(int id) throws IOException {
-        writer.write("/getdates" + id + "\n");
-        writer.flush();
-        String response;
-        while(!(response = reader.readLine()).equals("/end")) {
-            if(response.startsWith("/date")) {
-                System.out.println("received");
-                drawPrevDates(response);
+    private void fillCalendar() throws IOException {
+        for (int i = 0; i < 7; i++, time.add(Calendar.DAY_OF_MONTH, 1)) {
+            int year = time.get(Calendar.YEAR);
+            int month = time.get(Calendar.MONTH);
+            int dayFrom = time.get(Calendar.DAY_OF_MONTH);
+            writer.write(String.format("/getdates%d~%d~%d~%d\n", id, year, month, dayFrom));
+            writer.flush();
+            String response;
+            while (!(response = reader.readLine()).equals("/end")) {
+                if (response.startsWith("/date")) {
+                    System.out.println("received");
+                    drawPrevDates(i, response);
+                }
             }
         }
-        stage.setScene(calendar);
-        stage.setTitle("Calendar");
-        stage.show();
-        this.id = id;
+        time.add(Calendar.DAY_OF_MONTH, -7);
     }
 
-
-    private void drawPrevDates(String response) {
+    private void drawPrevDates(int i, String response) {
         String[] args = response.replace("/date", "")
                 .replace("\n", "")
                 .split("~");
-        int day = Integer.parseInt(args[0]);
-        int minute_from = Integer.parseInt(args[1]);
-        int minute_to = Integer.parseInt(args[2]);
-        String info = args[3];
+        int minute_from = Integer.parseInt(args[0]);
+        int minute_to = Integer.parseInt(args[1]);
+        String info = args[2];
 
         double startY = minute_from * CELL_Y_SIZE / 180 + 55;
         double endY = minute_to * CELL_Y_SIZE / 180 + 55;
-        double startX = day * CELL_X_SIZE;
-        if(day == 0) {
+        double startX = i * CELL_X_SIZE;
+        double size = CELL_X_SIZE;
+
+        if(i == 0) {
             startX += 20;
+            size -= 20;
         }
 
-        Rectangle rect = new Rectangle(startX, startY, CELL_X_SIZE, endY - startY);
+        Rectangle rect = new Rectangle(startX, startY, size, endY - startY);
+        rect.opacityProperty().set(0.3);
         Label text = new Label(info);
         text.setLayoutX(startX);
-        text.setLayoutY(startY + startY / 2);
+        text.setLayoutY((endY + startY)/2);
 
         calendarPane.getChildren().addAll(rect, text);
+    }
+
+    private void removeCalendar() {
+        dates.removeIf(node -> node.getClass() == Rectangle.class
+                            || node.getClass() == Label.class
+                            || node.getClass() == Line.class);
     }
 }

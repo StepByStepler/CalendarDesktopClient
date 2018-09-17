@@ -2,6 +2,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 
@@ -17,9 +18,11 @@ public class AuthorizationController {
     @FXML
     TextField loginText;
     @FXML
-    TextField passwordText;
+    PasswordField passwordText;
 
     public void registerClicked(ActionEvent event) throws IOException {
+        if(isEmpty()) return;
+
         Main.application.writer.write("/register" + loginText.getText() + " " + passwordText.getText() + "\n");
         Main.application.writer.flush();
         String response = Main.application.reader.readLine();
@@ -44,6 +47,8 @@ public class AuthorizationController {
     }
 
     public void loginClicked(ActionEvent event) throws IOException {
+        if(isEmpty()) return;
+
         Main.application.writer.write("/login" + loginText.getText() + " " + passwordText.getText() + "\n");
         Main.application.writer.flush();
         String response = Main.application.reader.readLine();
@@ -51,8 +56,22 @@ public class AuthorizationController {
             int id = Integer.parseInt(response.replace("/success", ""));
             Main.application.launchCalendar(id);
         } else if(response.startsWith("/unsuccess")) {
-            info.setTextFill(Color.rgb(40, 255, 40));
+            info.setTextFill(Color.rgb(255, 40, 40));
             info.setText("Enter correct login and password!");
         }
+    }
+
+    private boolean isEmpty() {
+        if(loginText.getText().isEmpty()) {
+            info.setTextFill(Color.rgb(255, 40, 40));
+            info.setText("Login cannot be empty!");
+            return true;
+        }
+        if(passwordText.getText().isEmpty()) {
+            info.setTextFill(Color.rgb(255, 40, 40));
+            info.setText("Password cannot be empty!");
+            return true;
+        }
+        return false;
     }
 }
