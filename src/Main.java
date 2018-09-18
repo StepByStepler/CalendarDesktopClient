@@ -15,7 +15,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.ArrayList;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.ListIterator;
@@ -24,7 +24,7 @@ public class Main extends Application {
     public static Main application;
     private Stage stage;
     int id = -1;
-    private static double CELL_X_SIZE;
+    static double CELL_X_SIZE;
     static double CELL_Y_SIZE;
 
     private Socket socket;
@@ -37,7 +37,6 @@ public class Main extends Application {
     private Scene calendar;
     AnchorPane calendarPane;
     Calendar time = Calendar.getInstance();
-    ArrayList<Node> dates = new ArrayList<>();
 
     public static void main(String[] args) {
         launch(args);
@@ -62,7 +61,7 @@ public class Main extends Application {
 
         calendarPane = FXMLLoader.load(getClass().getResource("Calendar.fxml"));
         CELL_X_SIZE = calendarPane.getPrefWidth() / 7;
-        CELL_Y_SIZE = (calendarPane.getPrefHeight() - 55) / 8;
+        CELL_Y_SIZE = (calendarPane.getPrefHeight() - 74) / 8;
         calendar = new Scene(calendarPane);
     }
 
@@ -84,17 +83,23 @@ public class Main extends Application {
         stage.show();
     }
 
-    private void fillLines() {
-        for (double d = calendarPane.getPrefWidth()/7; d < calendarPane.getPrefWidth(); d += CELL_X_SIZE) {
-            Line line = new Line(d, 55, d, calendarPane.getPrefHeight());
-            calendarPane.getChildren().add(line);
+    public void fillLines() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yy/MMM/dd, E");
+        for (double d = 0; d <= calendarPane.getPrefWidth(); d += CELL_X_SIZE) {
+            Label label = new Label(dateFormat.format(time.getTime()));
+            label.setLayoutX(d);
+            label.setLayoutY(74 - label.getFont().getSize() - 5);
+            time.add(Calendar.DAY_OF_MONTH, 1);
+            Line line = new Line(d, 74, d, calendarPane.getPrefHeight());
+            calendarPane.getChildren().addAll(line, label);
         }
+        time.add(Calendar.DAY_OF_MONTH, -7);
 
         int hour = 0;
-        Line separator = new Line(20, 55, 20, calendarPane.getPrefHeight());
+        Line separator = new Line(20, 74, 20, calendarPane.getPrefHeight());
         calendarPane.getChildren().add(separator);
 
-        for(double d = 55; d < calendarPane.getPrefHeight(); d += CELL_Y_SIZE) {
+        for(double d = 74; d < calendarPane.getPrefHeight(); d += CELL_Y_SIZE) {
             Line line = new Line(0, d, calendarPane.getPrefWidth(), d);
             Label label = new Label(String.valueOf(hour));
             hour += 3;
@@ -103,7 +108,7 @@ public class Main extends Application {
         }
     }
 
-    private void fillCalendar() throws IOException {
+    public void fillCalendar() throws IOException {
         for (int i = 0; i < 7; i++, time.add(Calendar.DAY_OF_MONTH, 1)) {
             int year = time.get(Calendar.YEAR);
             int month = time.get(Calendar.MONTH);
@@ -113,7 +118,6 @@ public class Main extends Application {
             String response;
             while (!(response = reader.readLine()).equals("/end")) {
                 if (response.startsWith("/date")) {
-                    System.out.println("received");
                     drawPrevDates(i, response);
                 }
             }
@@ -129,8 +133,8 @@ public class Main extends Application {
         int minute_to = Integer.parseInt(args[1]);
         String info = args[2];
 
-        double startY = minute_from * CELL_Y_SIZE / 180 + 55;
-        double endY = minute_to * CELL_Y_SIZE / 180 + 55;
+        double startY = minute_from * CELL_Y_SIZE / 180 + 74;
+        double endY = minute_to * CELL_Y_SIZE / 180 + 74;
         double startX = i * CELL_X_SIZE;
         double size = CELL_X_SIZE;
 
@@ -148,8 +152,8 @@ public class Main extends Application {
         calendarPane.getChildren().addAll(rect, text);
     }
 
-    private void removeCalendar() {
-        dates.removeIf(node -> node.getClass() == Rectangle.class
+    public void removeCalendar() {
+        calendarPane.getChildren().removeIf(node -> node.getClass() == Rectangle.class
                             || node.getClass() == Label.class
                             || node.getClass() == Line.class);
     }
