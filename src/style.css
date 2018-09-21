@@ -1,0 +1,12 @@
+.complete-rect {
+    -fx-opacity: 0.6;
+    -fx-fill: #51ADDB;
+}
+
+.select-rect {
+    -fx-opacity: 0.8;
+    -fx-fill: #D2D74D;
+    -fx-stroke: #5FD74D;
+    -fx-stroke-line-cap: butt;
+    -fx-stroke-width: 3;
+}

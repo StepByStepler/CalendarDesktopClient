@@ -19,27 +19,49 @@ public class CalendarController {
     @FXML
     Button addEvent;
 
-    double startX, startY;
-    double endX, endY;
-    int currentDay;
-    Rectangle rect;
-    boolean addingEvent;
-    double mouseX = -1, mouseY = -1;
+    private double startX, startY;
+    private double endX, endY;
+    private int currentDay;
+    private Rectangle rect = new Rectangle();
+    private Label label;
+    private boolean addingEvent;
+    private double mouseX = -1, mouseY = -1;
+    private boolean selectedRectIsFinal;
 
     public void mousePressed(MouseEvent event) {
         mouseX = event.getX();
         mouseY = event.getY();
+
         double prefWidth = Main.application.calendarPane.getPrefWidth();
-        currentDay = (int) (mouseX/(prefWidth/7));
-        startX = currentDay * prefWidth/7;
-        endX = startX + prefWidth/7;
+        currentDay = (int) (mouseX / (prefWidth / 7));
+
+        startX = currentDay * prefWidth / 7;
+        endX = startX + prefWidth / 7;
         startY = mouseY;
-        if(currentDay == 0) {
-            startX+=20;
+
+        Rectangle copy = rect;
+        selectRectangle();
+
+        if(rect == copy) {
+            if(!selectedRectIsFinal) {
+                Main.application.calendarPane.getChildren().remove(rect);
+            } else {
+                rect.getStyleClass().remove("select-rect");
+                rect.getStyleClass().add("complete-rect");
+            }
+            selectedRectIsFinal = false;
+            if (currentDay == 0) {
+                startX += 20;
+            }
+
+//            rect.getStyleClass().remove("select-rect");
+//            rect.getStyleClass().add("complete-rect");
+            rect = new Rectangle(startX, startY, 0, 0);
+            rect.getStyleClass().add("select-rect");
+            Main.application.calendarPane.getChildren().add(rect);
+        } else {
+            selectedRectIsFinal = true;
         }
-        Main.application.calendarPane.getChildren().remove(rect);
-        rect = new Rectangle(startX, startY, 0, 0);
-        Main.application.calendarPane.getChildren().add(rect);
     }
 
     public void mouseReleased(MouseEvent event) throws IOException {
@@ -47,7 +69,7 @@ public class CalendarController {
             addingEvent = true;
             eventname.setDisable(false);
             addEvent.setDisable(false);
-            if(rect.getHeight() > 0) {
+            if(!selectedRectIsFinal && rect.getHeight() > 0) {
                 eventname.requestFocus();
             }
         }
@@ -55,7 +77,7 @@ public class CalendarController {
 
     public void mouseDragged(MouseEvent event) {
         endY = event.getY();
-        if(endY > 74 && startY > 74) {
+        if(!selectedRectIsFinal && endY > 74 && startY > 74) {
             rect.setWidth(endX - startX);
             rect.setHeight(endY - startY);
         }
@@ -84,7 +106,8 @@ public class CalendarController {
                     Main.application.calendarPane.getChildren().remove(rect);
                     break;
                 case "/success":
-                    rect.opacityProperty().set(0.3);
+                    rect.getStyleClass().remove("select-rect");
+                    rect.getStyleClass().add("complete-rect");
                     Label text = new Label(eventName);
                     text.setLayoutX(startX);
                     text.setLayoutY((endY + startY)/2);
@@ -92,6 +115,9 @@ public class CalendarController {
                     rect = new Rectangle(0, 0);
                     break;
             }
+            eventname.setDisable(true);
+            addEvent.setDisable(true);
+            eventname.clear();
         }
     }
 
@@ -123,8 +149,10 @@ public class CalendarController {
                 int month = Main.application.time.get(Calendar.MONTH);
                 int day = Main.application.time.get(Calendar.DAY_OF_MONTH) + currentDay;
                 int minutes = getMinutesFromLocation(mouseY);
+
                 Main.application.writer.write(String.format("/delete%d~%d~%d~%d~%d\n", id, year, month, day, minutes));
                 Main.application.writer.flush();
+
                 String result = Main.application.reader.readLine();
                 if(result.equals("/changed")) {
                     deleteRectangle();
@@ -138,24 +166,40 @@ public class CalendarController {
     }
 
     private void deleteRectangle() {
-        int reqdX = (int) mouseX;
-        int reqY = (int) mouseY;
+        Main.application.calendarPane.getChildren().remove(rect);
+        Main.application.calendarPane.getChildren().remove(label);
+    }
+
+    private void selectRectangle() {
         ListIterator<Node> elements = Main.application.calendarPane.getChildren().listIterator();
+        Rectangle copyToDelete = null;
         while(elements.hasNext()) {
             Node node = elements.next();
             if(node.getClass() == Rectangle.class) {
                 Rectangle rectangle = (Rectangle) node;
 
-                if(rectangle.getX() <= reqdX && rectangle.getX() + rectangle.getWidth() >= reqdX &&
-                        rectangle.getY() <= reqY && rectangle.getY() + rectangle.getHeight() >= reqY) {
 
-                    elements.remove();
-                    if(elements.hasNext()) {
-                        elements.next();
-                        elements.remove();
+                if(rectangle.getX() <= mouseX && rectangle.getX() + rectangle.getWidth() >= mouseX &&
+                            rectangle.getY() <= mouseY && rectangle.getY() + rectangle.getHeight() >= mouseY) {
+
+                    if(selectedRectIsFinal) {
+                        rect.getStyleClass().remove("select-rect");
+                        rect.getStyleClass().add("complete-rect");
+                    } else {
+                        copyToDelete = rect; //anti ConcurrentModificationException
                     }
+                    rect = rectangle;
+                    rect.getStyleClass().add("select-rect");
+                    if(elements.hasNext()) {
+                        label = (Label) elements.next();
+                    }
+                    selectedRectIsFinal = true;
+                    label.requestFocus(); //remove focus from textfield;
                 }
             }
+        }
+        if(copyToDelete != null) {
+            Main.application.calendarPane.getChildren().remove(copyToDelete);
         }
     }
 }

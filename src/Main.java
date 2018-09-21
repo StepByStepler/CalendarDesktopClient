@@ -4,8 +4,10 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape3D;
 import javafx.stage.Stage;
 
 import java.io.BufferedReader;
@@ -63,6 +65,7 @@ public class Main extends Application {
         CELL_X_SIZE = calendarPane.getPrefWidth() / 7;
         CELL_Y_SIZE = (calendarPane.getPrefHeight() - 74) / 8;
         calendar = new Scene(calendarPane);
+        calendar.getStylesheets().add("style.css");
     }
 
     public void launchAuthorization() {
@@ -84,7 +87,7 @@ public class Main extends Application {
     }
 
     public void fillLines() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yy/MMM/dd, E");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MMM/yy, E");
         for (double d = 0; d <= calendarPane.getPrefWidth(); d += CELL_X_SIZE) {
             Label label = new Label(dateFormat.format(time.getTime()));
             label.setLayoutX(d);
@@ -144,7 +147,7 @@ public class Main extends Application {
         }
 
         Rectangle rect = new Rectangle(startX, startY, size, endY - startY);
-        rect.opacityProperty().set(0.3);
+        rect.getStyleClass().add("complete-rect");
         Label text = new Label(info);
         text.setLayoutX(startX);
         text.setLayoutY((endY + startY)/2);
