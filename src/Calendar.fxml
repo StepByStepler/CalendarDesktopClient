@@ -7,23 +7,23 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane disable="false" onKeyPressed="#keyPressed" onMouseDragged="#mouseDragged" onMousePressed="#mousePressed" onMouseReleased="#mouseReleased" prefHeight="600.0" prefWidth="800.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/2.2" fx:controller="CalendarController">
+<AnchorPane disable="false" onKeyPressed="#keyPressed" onKeyReleased="#keyReleased" onMouseDragged="#mouseDragged" onMousePressed="#mousePressed" onMouseReleased="#mouseReleased" prefHeight="600.0" prefWidth="800.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/2.2" fx:controller="CalendarController">
   <children>
-    <MenuButton layoutX="14.0" layoutY="15.0" mnemonicParsing="false" prefHeight="36.0" prefWidth="130.0" text="Вид календаря">
+    <MenuButton focusTraversable="false" layoutX="14.0" layoutY="15.0" mnemonicParsing="false" prefHeight="36.0" prefWidth="130.0" text="Вид календаря">
       <items>
         <MenuItem mnemonicParsing="false" text="Action 1" />
         <MenuItem mnemonicParsing="false" text="Action 2" />
       </items>
     </MenuButton>
-    <Button disable="false" layoutX="656.0" layoutY="14.0" mnemonicParsing="false" onAction="#logOut" prefHeight="36.0" prefWidth="130.0" text="Выйти" />
+    <Button disable="false" focusTraversable="false" layoutX="656.0" layoutY="14.0" mnemonicParsing="false" onAction="#logOut" prefHeight="36.0" prefWidth="130.0" text="Выйти" />
     <Separator layoutX="0.0" layoutY="74.0" prefWidth="800.0" />
-    <TextField fx:id="eventname" disable="true" layoutX="216.0" layoutY="18.0" prefHeight="29.0" prefWidth="206.0" promptText="Название для события" />
-    <Button fx:id="addEvent" disable="true" layoutX="448.0" layoutY="14.0" mnemonicParsing="false" onAction="#addEvent" prefHeight="36.0" prefWidth="119.0" text="Добавить событие">
+    <TextField fx:id="eventname" disable="true" focusTraversable="false" layoutX="216.0" layoutY="18.0" prefHeight="29.0" prefWidth="206.0" promptText="Название для события" />
+    <Button fx:id="addEvent" disable="true" focusTraversable="false" layoutX="448.0" layoutY="14.0" mnemonicParsing="false" onAction="#addEvent" prefHeight="36.0" prefWidth="119.0" text="Сохранить">
       <font>
         <Font size="11.0" />
       </font>
     </Button>
-    <Button layoutX="162.0" layoutY="19.0" mnemonicParsing="false" onAction="#moveLeft" prefHeight="29.0" text="&lt;-" />
-    <Button layoutX="602.0" layoutY="18.0" mnemonicParsing="false" onAction="#moveRight" prefHeight="29.0" text="-&gt;" />
+    <Button focusTraversable="false" layoutX="162.0" layoutY="19.0" mnemonicParsing="false" onAction="#moveLeft" prefHeight="29.0" text="&lt;-" />
+    <Button focusTraversable="false" layoutX="602.0" layoutY="18.0" mnemonicParsing="false" onAction="#moveRight" prefHeight="29.0" text="-&gt;" />
   </children>
 </AnchorPane>

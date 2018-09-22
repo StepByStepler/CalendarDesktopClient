@@ -20,7 +20,6 @@ import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.ListIterator;
 
 public class Main extends Application {
     public static Main application;
@@ -64,6 +63,7 @@ public class Main extends Application {
         calendarPane = FXMLLoader.load(getClass().getResource("Calendar.fxml"));
         CELL_X_SIZE = calendarPane.getPrefWidth() / 7;
         CELL_Y_SIZE = (calendarPane.getPrefHeight() - 74) / 8;
+        CalendarController.PIXELS_IN_MINUTE = CELL_Y_SIZE / 180;
         calendar = new Scene(calendarPane);
         calendar.getStylesheets().add("style.css");
     }
