@@ -1,13 +1,10 @@
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.shape.Shape3D;
 import javafx.stage.Stage;
 
 import java.io.BufferedReader;
@@ -27,6 +24,7 @@ public class Main extends Application {
     int id = -1;
     static double CELL_X_SIZE;
     static double CELL_Y_SIZE;
+    static int PANEL_SIZE = 74;
 
     private Socket socket;
     BufferedReader reader;
@@ -62,8 +60,9 @@ public class Main extends Application {
 
         calendarPane = FXMLLoader.load(getClass().getResource("Calendar.fxml"));
         CELL_X_SIZE = calendarPane.getPrefWidth() / 7;
-        CELL_Y_SIZE = (calendarPane.getPrefHeight() - 74) / 8;
+        CELL_Y_SIZE = (calendarPane.getPrefHeight() - PANEL_SIZE) / 8;
         CalendarController.PIXELS_IN_MINUTE = CELL_Y_SIZE / 180;
+        CalendarController.PIXELS_TO_ROUND = CalendarController.PIXELS_IN_MINUTE * 15;
         calendar = new Scene(calendarPane);
         calendar.getStylesheets().add("style.css");
     }
@@ -93,13 +92,13 @@ public class Main extends Application {
             label.setLayoutX(d);
             label.setLayoutY(74 - label.getFont().getSize() - 5);
             time.add(Calendar.DAY_OF_MONTH, 1);
-            Line line = new Line(d, 74, d, calendarPane.getPrefHeight());
+            Line line = new Line(d, PANEL_SIZE, d, calendarPane.getPrefHeight());
             calendarPane.getChildren().addAll(line, label);
         }
         time.add(Calendar.DAY_OF_MONTH, -7);
 
         int hour = 0;
-        Line separator = new Line(20, 74, 20, calendarPane.getPrefHeight());
+        Line separator = new Line(20, PANEL_SIZE, 20, calendarPane.getPrefHeight());
         calendarPane.getChildren().add(separator);
 
         for(double d = 74; d < calendarPane.getPrefHeight(); d += CELL_Y_SIZE) {
@@ -136,8 +135,8 @@ public class Main extends Application {
         int minute_to = Integer.parseInt(args[1]);
         String info = args[2];
 
-        double startY = minute_from * CELL_Y_SIZE / 180 + 74;
-        double endY = minute_to * CELL_Y_SIZE / 180 + 74;
+        double startY = minute_from * CELL_Y_SIZE / 180 + PANEL_SIZE;
+        double endY = minute_to * CELL_Y_SIZE / 180 + PANEL_SIZE;
         double startX = i * CELL_X_SIZE;
         double size = CELL_X_SIZE;
 
@@ -149,10 +148,18 @@ public class Main extends Application {
         Rectangle rect = new Rectangle(startX, startY, size, endY - startY);
         rect.getStyleClass().add("complete-rect");
         Label text = new Label(info);
-        text.setLayoutX(startX);
-        text.setLayoutY((endY + startY)/2);
+        text.setLayoutX(rect.getX());
+        text.setLayoutY(rect.getY());
 
-        calendarPane.getChildren().addAll(rect, text);
+        int hour_from = minute_from / 60;
+        minute_from = minute_from % 60;
+        int hour_to = minute_to / 60;
+        minute_to = minute_to % 60;
+        Label time = new Label(String.format("%02d:%02d - %02d:%02d", hour_from, minute_from, hour_to, minute_to));
+        time.setLayoutX(rect.getX());
+        time.setLayoutY(rect.getY() + text.getFont().getSize());
+
+        calendarPane.getChildren().addAll(rect, text, time);
     }
 
     public void removeCalendar() {
