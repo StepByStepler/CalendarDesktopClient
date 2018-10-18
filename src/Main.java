@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -36,6 +37,7 @@ public class Main extends Application {
     private Scene calendar;
     AnchorPane calendarPane;
     Calendar time = Calendar.getInstance();
+    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm");
 
     public static void main(String[] args) {
         launch(args);
@@ -75,11 +77,21 @@ public class Main extends Application {
         id = -1;
     }
 
-    public void launchCalendar(int id) throws IOException {
+    public void launchCalendar(int id) throws IOException, ParseException {
         time.setTime(new Date());
+        time.set(Calendar.MILLISECOND, 0);
+        time.set(Calendar.SECOND, 0);
+        time.set(Calendar.MINUTE, 0);
+        time.set(Calendar.HOUR_OF_DAY, 0);
+        time.set(Calendar.DAY_OF_WEEK, Calendar.TUESDAY);
+        time.setTimeInMillis(time.getTimeInMillis() - time.getTimeZone().getRawOffset());
+
         this.id = id;
+
         fillLines();
         fillCalendar();
+        CalendarController.setCalendar(time);
+
         stage.setScene(calendar);
         stage.setTitle("Calendar");
         stage.show();
@@ -110,52 +122,56 @@ public class Main extends Application {
         }
     }
 
-    public void fillCalendar() throws IOException {
-        for (int i = 0; i < 7; i++, time.add(Calendar.DAY_OF_MONTH, 1)) {
-            int year = time.get(Calendar.YEAR);
-            int month = time.get(Calendar.MONTH);
-            int dayFrom = time.get(Calendar.DAY_OF_MONTH);
-            writer.write(String.format("/getdates%d~%d~%d~%d\n", id, year, month, dayFrom));
-            writer.flush();
-            String response;
-            while (!(response = reader.readLine()).equals("/end")) {
-                if (response.startsWith("/date")) {
-                    drawPrevDates(i, response);
-                }
+    public void fillCalendar() throws IOException, ParseException {
+        Calendar week = new Calendar.Builder().setInstant(time.getTimeInMillis()).build();
+        long dayMillis = week.getTimeInMillis() - week.getTimeInMillis() % (24 * 60 * 60 * 1000);
+
+        Date dateFrom = new Date(dayMillis - week.getTimeZone().getRawOffset());
+        Date dateTo = new Date(dayMillis + 7 * 24 * 60 * 60 * 1000 - week.getTimeZone().getRawOffset());
+
+        writer.write(String.format("/getdates%d~%s~%s\n", id, dateFormat.format(dateFrom), dateFormat.format(dateTo)));
+        writer.flush();
+
+        String response;
+        while (!(response = reader.readLine()).equals("/end")) {
+            if (response.startsWith("/date")) {
+                drawPrevDates(response);
             }
         }
-        time.add(Calendar.DAY_OF_MONTH, -7);
     }
 
-    private void drawPrevDates(int i, String response) {
+    private void drawPrevDates(String response) throws ParseException {
         String[] args = response.replace("/date", "")
                 .replace("\n", "")
                 .split("~");
-        int minute_from = Integer.parseInt(args[0]);
-        int minute_to = Integer.parseInt(args[1]);
+        Calendar from = new Calendar.Builder().setInstant(dateFormat.parse(args[0])).build();
+        Calendar to = new Calendar.Builder().setInstant(dateFormat.parse(args[1])).build();
         String info = args[2];
 
-        double startY = minute_from * CELL_Y_SIZE / 180 + PANEL_SIZE;
-        double endY = minute_to * CELL_Y_SIZE / 180 + PANEL_SIZE;
-        double startX = i * CELL_X_SIZE;
+        double startY = (from.get(Calendar.HOUR_OF_DAY) * 60 + from.get(Calendar.MINUTE)) * CELL_Y_SIZE / 180 + PANEL_SIZE;
+        double endY = (to.get(Calendar.HOUR_OF_DAY) * 60 + to.get(Calendar.MINUTE)) * CELL_Y_SIZE / 180 + PANEL_SIZE;
+
+        long diff = from.get(Calendar.DAY_OF_WEEK) - time.get(Calendar.DAY_OF_WEEK);
+        if(diff < 0) {
+            diff += 7;
+        }
+        double startX = diff * CELL_X_SIZE;
         double size = CELL_X_SIZE;
 
-        if(i == 0) {
+        if(from.get(Calendar.DAY_OF_MONTH) == time.get(Calendar.DAY_OF_MONTH)) {
             startX += 20;
             size -= 20;
         }
 
         Rectangle rect = new Rectangle(startX, startY, size, endY - startY);
         rect.getStyleClass().add("complete-rect");
+
         Label text = new Label(info);
         text.setLayoutX(rect.getX());
         text.setLayoutY(rect.getY());
 
-        int hour_from = minute_from / 60;
-        minute_from = minute_from % 60;
-        int hour_to = minute_to / 60;
-        minute_to = minute_to % 60;
-        Label time = new Label(String.format("%02d:%02d - %02d:%02d", hour_from, minute_from, hour_to, minute_to));
+        Label time = new Label(String.format("%02d:%02d - %02d:%02d", from.get(Calendar.HOUR_OF_DAY), from.get(Calendar.MINUTE)
+                                                    , to.get(Calendar.HOUR_OF_DAY), to.get(Calendar.MINUTE)));
         time.setLayoutX(rect.getX());
         time.setLayoutY(rect.getY() + text.getFont().getSize());
 

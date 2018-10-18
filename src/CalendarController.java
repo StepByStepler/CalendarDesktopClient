@@ -10,8 +10,13 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.shape.Rectangle;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.ListIterator;
+import java.util.TimeZone;
 
 public class CalendarController {
     @FXML
@@ -22,6 +27,9 @@ public class CalendarController {
     public static double PIXELS_IN_MINUTE;
     private static int MINUTES_TO_ROUND = 15;
     static double PIXELS_TO_ROUND = PIXELS_IN_MINUTE * MINUTES_TO_ROUND;
+    private static Calendar calendar;
+
+    static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm");
 
     private double startX, startY;
     private double endX, endY;
@@ -36,6 +44,10 @@ public class CalendarController {
     private boolean selectedRectIsFinal;
     private boolean shiftPressed = false;
 
+    public static void setCalendar(Calendar calendar) {
+        CalendarController.calendar = calendar;
+    }
+
     public void mousePressed(MouseEvent event) {
         mouseX = event.getX();
         mouseY = event.getY();
@@ -45,7 +57,6 @@ public class CalendarController {
 
         startX = currentDay * prefWidth / 7;
         endX = startX + prefWidth / 7;
-        //startY = Math.round((mouseY - 74) / (15 * PIXELS_IN_MINUTE)) * (15 * PIXELS_IN_MINUTE) + 74;
         startY = roundToFifteen(mouseY);
 
         Rectangle copy = rect;
@@ -85,7 +96,6 @@ public class CalendarController {
     }
 
     public void mouseDragged(MouseEvent event) {
-        //endY = Math.round((event.getY() - 74) / (15 * PIXELS_IN_MINUTE)) * (15 * PIXELS_IN_MINUTE) + 74;
         endY = roundToFifteen(event.getY());
         if(!selectedRectIsFinal && endY > Main.PANEL_SIZE && startY > Main.PANEL_SIZE) {
             rect.setWidth(endX - startX);
@@ -101,13 +111,20 @@ public class CalendarController {
         if(!eventName.contains("~")) {
             int minutesFrom = getMinutesFromLocation(rect.getY());
             int minutesTo = getMinutesFromLocation(rect.getY() + rect.getHeight());
-            int year = Main.application.time.get(Calendar.YEAR);
-            int month = Main.application.time.get(Calendar.MONTH);
             if(selectedRectIsFinal) {
-                Main.application.writer.write(String.format("/update%d~%d~%d~%d~%d~%d~%d~%d~%s~%s\n", Main.application.id,
-                                              year, month, Main.application.time.get(Calendar.DAY_OF_MONTH) + currentDay,
-                                              oldTimeFrom, oldTimeTo, minutesFrom, minutesTo, oldName, eventName));
+
+                Calendar oldDateFrom = buildCalendarFromCurrent(currentDay, oldTimeFrom);
+                Calendar oldDateTo = buildCalendarFromCurrent(currentDay, oldTimeTo);
+
+                Calendar newDateFrom = buildCalendarFromCurrent(currentDay, minutesFrom);
+                Calendar newDateTo = buildCalendarFromCurrent(currentDay, minutesTo);
+
+                Main.application.writer.write(String.format("/update%d~%s~%s~%s~%s~%s~%s\n", Main.application.id,
+                                        dateFormat.format(oldDateFrom.getTime()), dateFormat.format(oldDateTo.getTime()),
+                                        dateFormat.format(newDateFrom.getTime()), dateFormat.format(newDateTo.getTime()),
+                                        oldName, eventName));
                 Main.application.writer.flush();
+
                 String response = Main.application.reader.readLine();
                 switch(response) {
                     case "/dateexists":
@@ -128,10 +145,17 @@ public class CalendarController {
                 }
             }
             else {
-                Main.application.writer.write(String.format("/add%d~%d~%d~%d~%d~%d~%s\n", Main.application.id, year, month,
-                        Main.application.time.get(Calendar.DAY_OF_MONTH) + currentDay,
-                        minutesFrom, minutesTo, eventName));
+                long dayMillis = calendar.getTime().getTime()
+                                - calendar.getTime().getTime() % 86400000;
+
+                Date dateFrom = new Date(dayMillis + (currentDay + 1) * 1000 * 60 * 60 * 24 + minutesFrom * 60 * 1000);
+                Date dateTo = new Date(dayMillis + (currentDay + 1) * 1000 * 60 * 60 * 24 + minutesTo * 60 * 1000);
+
+                Main.application.writer.write(String.format("/add%d~%s~%s~%s\n", Main.application.id, dateFormat.format(dateFrom),
+                        dateFormat.format(dateTo), eventName));
+                Calendar.getInstance();
                 Main.application.writer.flush();
+
                 String response = Main.application.reader.readLine();
                 switch (response) {
                     case "/dateexists":
@@ -167,14 +191,14 @@ public class CalendarController {
         Main.application.launchAuthorization();
     }
 
-    public void moveLeft(ActionEvent event) throws IOException {
+    public void moveLeft(ActionEvent event) throws IOException, ParseException {
         Main.application.time.add(Calendar.DAY_OF_MONTH, -7);
         Main.application.removeCalendar();
         Main.application.fillLines();
         Main.application.fillCalendar();
     }
 
-    public void moveRight(ActionEvent event) throws IOException {
+    public void moveRight(ActionEvent event) throws IOException, ParseException {
         Main.application.time.add(Calendar.DAY_OF_MONTH, 7);
         Main.application.removeCalendar();
         Main.application.fillLines();
@@ -183,14 +207,19 @@ public class CalendarController {
 
     public void keyPressed(KeyEvent event) throws IOException {
         if(event.getCode() == KeyCode.DELETE) {
-            if(mouseX != -1) {
+            if(mouseX != -1 && selectedRectIsFinal) {
                 int id = Main.application.id;
-                int year = Main.application.time.get(Calendar.YEAR);
-                int month = Main.application.time.get(Calendar.MONTH);
-                int day = Main.application.time.get(Calendar.DAY_OF_MONTH) + currentDay;
-                int minutes = getMinutesFromLocation(mouseY);
 
-                Main.application.writer.write(String.format("/delete%d~%d~%d~%d~%d\n", id, year, month, day, minutes));
+                Calendar deletingFrom = new Calendar.Builder().setInstant(calendar.getTimeInMillis()).build();
+                deletingFrom.add(Calendar.DAY_OF_MONTH, currentDay);
+                deletingFrom.add(Calendar.MINUTE, getMinutesFromLocation(rect.getY()));
+
+                Calendar deletingTo = new Calendar.Builder().setInstant(calendar.getTimeInMillis()).build();
+                deletingTo.add(Calendar.DAY_OF_MONTH, currentDay);
+                deletingTo.add(Calendar.MINUTE, getMinutesFromLocation(rect.getY() + rect.getHeight()));
+
+                Main.application.writer.write(String.format("/delete%d~%s~%s\n", id,
+                        dateFormat.format(deletingFrom.getTime()), dateFormat.format(deletingTo.getTime())));
                 Main.application.writer.flush();
 
                 String result = Main.application.reader.readLine();
@@ -342,5 +371,12 @@ public class CalendarController {
         rect.setHeight((oldTimeTo - oldTimeFrom) * PIXELS_IN_MINUTE);
         name.setText(oldName);
         recalculateLabel();
+    }
+
+    private Calendar buildCalendarFromCurrent(int day, int minutes) {
+        Calendar time = new Calendar.Builder().setInstant(calendar.getTimeInMillis()).build();
+        time.add(Calendar.DAY_OF_MONTH, day);
+        time.add(Calendar.MINUTE, minutes);
+        return time;
     }
 }

@@ -7,6 +7,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 
 import java.io.IOException;
+import java.text.ParseException;
 
 public class AuthorizationController {
     @FXML
@@ -46,7 +47,7 @@ public class AuthorizationController {
         }
     }
 
-    public void loginClicked(ActionEvent event) throws IOException {
+    public void loginClicked(ActionEvent event) throws IOException, ParseException {
         if(isEmpty()) return;
 
         Main.application.writer.write("/login" + loginText.getText() + " " + passwordText.getText() + "\n");
