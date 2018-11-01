@@ -45,7 +45,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        socket = new Socket(InetAddress.getLocalHost(), 10000);
+        socket = new Socket(InetAddress.getByName("192.168.1.43"), 10000);
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 

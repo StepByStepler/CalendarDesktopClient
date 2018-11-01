@@ -8,6 +8,8 @@ import javafx.scene.paint.Color;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AuthorizationController {
     @FXML
@@ -19,12 +21,16 @@ public class AuthorizationController {
     @FXML
     TextField loginText;
     @FXML
+    TextField emailText;
+    @FXML
     PasswordField passwordText;
+
+    private Pattern emailPattern = Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
 
     public void registerClicked(ActionEvent event) throws IOException {
         if(isEmpty()) return;
 
-        Main.application.writer.write("/register" + loginText.getText() + " " + passwordText.getText() + "\n");
+        Main.application.writer.write("/register" + loginText.getText() + " " + passwordText.getText() + " " + emailText.getText() + "\n");
         Main.application.writer.flush();
         String response = Main.application.reader.readLine();
         switch(response) {
@@ -63,6 +69,11 @@ public class AuthorizationController {
     }
 
     private boolean isEmpty() {
+        if(emailMatches(emailText.getText())) {
+            info.setTextFill(Color.rgb(255, 40, 40));
+            info.setText("Email not matches!");
+            return true;
+        }
         if(loginText.getText().isEmpty()) {
             info.setTextFill(Color.rgb(255, 40, 40));
             info.setText("Login cannot be empty!");
@@ -74,5 +85,10 @@ public class AuthorizationController {
             return true;
         }
         return false;
+    }
+
+    private boolean emailMatches(String email) {
+        Matcher matcher = emailPattern.matcher(email);
+        return matcher.find();
     }
 }

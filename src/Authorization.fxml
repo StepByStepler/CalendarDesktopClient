@@ -23,5 +23,6 @@
     <Button fx:id="loginButton" layoutX="200.0" layoutY="298.0" mnemonicParsing="false" onAction="#loginClicked" prefHeight="46.0" prefWidth="121.0" text="Войти" />
     <Label fx:id="info" alignment="CENTER" layoutX="58.0" layoutY="250.0" prefHeight="40.0" prefWidth="234.0" text="" />
     <PasswordField fx:id="passwordText" layoutX="58.0" layoutY="205.0" prefHeight="29.0" prefWidth="234.0" promptText="Пароль" />
+    <TextField layoutX="58.0" layoutY="121.0" prefHeight="29.0" prefWidth="234.0" promptText="Почта (при регистрации)" />
   </children>
 </AnchorPane>
